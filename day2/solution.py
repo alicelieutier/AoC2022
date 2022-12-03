@@ -8,13 +8,13 @@ def parse(file):
   with open(file) as input:
     return [tuple(line.strip().split()) for line in input.readlines()]
 
-
 # The score for a single round is the score for the shape you selected
 # (1 for Rock, 2 for Paper, and 3 for Scissors)
 # plus the score for the outcome of the round
 # (0 if you lost, 3 if the round was a draw, and 6 if you won).
 
-SCORING = {
+ 
+OUTCOME_SCORE = {
   'A': {'Rock': 3, 'Paper': 6, 'Scissors': 0}, # opponent chooses Rock
   'B': {'Rock': 0, 'Paper': 3, 'Scissors': 6}, # opponent chooses Paper
   'C': {'Rock': 6, 'Paper': 0, 'Scissors': 3} # opponent chooses Scissors
@@ -22,7 +22,7 @@ SCORING = {
 SHAPE_SCORE = {'Rock': 1, 'Paper': 2, 'Scissors': 3}
 
 def score(opponent, me):
-  outcome = SCORING[opponent][me]
+  outcome = OUTCOME_SCORE[opponent][me]
   shape = SHAPE_SCORE[me]
   return outcome + shape
 
