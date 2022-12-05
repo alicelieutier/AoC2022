@@ -37,9 +37,20 @@ def process_part_1(stacks, moves):
       stacks[end].append(stacks[start].pop())
   return ''.join(stack[-1] for stack in stacks)
 
+def process_part_2(stacks, moves):
+  temp_stack = []
+  for nb_of_crates, start, end in moves:
+    for _ in range(nb_of_crates):
+      temp_stack.append(stacks[start].pop())
+    for _ in range(nb_of_crates):
+      stacks[end].append(temp_stack.pop())
+  return ''.join(stack[-1] for stack in stacks)
+
 
 # Solution
 print(process_part_1(*parse(INPUT_FILE)))
+print(process_part_2(*parse(INPUT_FILE)))
 
 # Tests
 assert process_part_1(*parse(TEST_FILE)) == 'CMZ'
+assert process_part_2(*parse(TEST_FILE)) == 'MCD'
