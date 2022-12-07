@@ -66,8 +66,21 @@ def process_part_1(lines):
   _, directories = parseTree(lines)
   return sum(dir.getSize() for dir in directories if dir.getSize() <= 100000)
 
+TOTAL_DISK_SPACE = 70000000
+SPACE_NEEDED = 30000000
+
+def process_part_2(lines):
+  tree, directories = parseTree(lines)
+  space_to_clear = SPACE_NEEDED - (TOTAL_DISK_SPACE - tree.getSize())
+  # size of smallest directory of at least size 'space_to_clear'
+  candidates = filter(lambda dir: dir.getSize() >= space_to_clear, directories)
+  return min(candidates, key=lambda dir: dir.getSize()).getSize()
+
+
 # Solution
 print(process_part_1(parse(INPUT_FILE)))
+print(process_part_2(parse(INPUT_FILE)))
 
 # Tests
 assert process_part_1(parse(TEST_FILE)) == 95437
+assert process_part_2(parse(TEST_FILE)) == 24933642
