@@ -1,4 +1,4 @@
-#! /opt/homebrew/bin/python3
+#! /usr/bin/env python3
 import os
 
 TEST_FILE = f'{os.path.dirname(__file__)}/test_input'

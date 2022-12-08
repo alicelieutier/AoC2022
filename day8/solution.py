@@ -1,4 +1,4 @@
-#! /opt/homebrew/bin/python3
+#! /usr/bin/env python3
 import os
 from itertools import repeat
 from functools import reduce
