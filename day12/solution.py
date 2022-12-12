@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
-import os
-from collections import deque
+import os, math
+from collections import deque, defaultdict
 
 TEST_FILE = f'{os.path.dirname(__file__)}/test_input'
 INPUT_FILE = f'{os.path.dirname(__file__)}/input'
@@ -48,49 +48,33 @@ def get_heightmap(lines):
   heightmap[ei][ej] = 'z'
   return heightmap, start, end
 
-def shortest_path(heightmap, start, end):
-  pathlength_from_start = {start: 0}
+def shortest_path(heightmap, start, end_condition, reachable_neighbours):
+  pathlengths = defaultdict(lambda: math.inf)
   visited = set()
   to_visit = deque()
-  pos = start
-  while pos != end:
-    for neigh in reachable_up(heightmap, pos):
-      if neigh in pathlength_from_start:
-        pathlength_from_start[neigh] = min(pathlength_from_start[neigh], pathlength_from_start[pos]+1)
-      else:
-        pathlength_from_start[neigh] = pathlength_from_start[pos]+1
-      to_visit.append(neigh)
-    visited.add(pos)
-    pos = to_visit.popleft()
-    while pos in visited:
-      pos = to_visit.popleft()
-  return pathlength_from_start[end]
-
-def shortest_path_reverse(heightmap, start, end):
-  pathlength_from_end = {end: 0}
-  visited = set()
-  to_visit = deque()
-  pos = end
-  while heightmap[pos[0]][pos[1]] != 'a' :
-    for neigh in reachable_down(heightmap, pos):
-      if neigh in pathlength_from_end:
-        pathlength_from_end[neigh] = min(pathlength_from_end[neigh], pathlength_from_end[pos]+1)
-      else:
-        pathlength_from_end[neigh] = pathlength_from_end[pos]+1
-      to_visit.append(neigh)
-    visited.add(pos)
-    pos = to_visit.popleft()
-    while pos in visited:
-      pos = to_visit.popleft()
-  return pathlength_from_end[pos]
+  current_pos = start
+  pathlengths[start] = 0
+  while not end_condition(current_pos):
+    if current_pos not in visited:
+      for position in reachable_neighbours(heightmap, current_pos):
+        pathlengths[position] = min(pathlengths[position], pathlengths[current_pos]+1)
+        to_visit.append(position)
+      visited.add(current_pos)
+    current_pos = to_visit.popleft()
+  return pathlengths[current_pos]
 
 def process_part_1(lines):
   heightmap, start, end = get_heightmap(lines)
-  return shortest_path(heightmap, start, end)
+  return shortest_path(heightmap, start, lambda pos : pos == end, reachable_up)
 
 def process_part_2(lines):
-  heightmap, start, end = get_heightmap(lines)
-  return shortest_path_reverse(heightmap, start, end)
+  heightmap, _, end = get_heightmap(lines)
+  return shortest_path(
+    heightmap,
+    end,
+    lambda pos: heightmap[pos[0]][pos[1]] == 'a',
+    reachable_down,
+  )
 
 # Solution
 print(process_part_1(parse(INPUT_FILE)))
