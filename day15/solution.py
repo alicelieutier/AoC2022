@@ -82,10 +82,12 @@ def process_part_2(data, max_coord):
   for y in range(max_coord+1):
     ranges = sorted(intersection_range(disk, y)
       for disk in disks if does_intersect(disk, y))
-    for (_,e1),(s2,_) in pairwise(ranges):
-      if e1 + 1 < s2:
-        if not is_in_a_disk(disks, (e1+1, y)):
-          return tuning_frequency((e1+1, y))
+
+    end = ranges[0][1]
+    for s, e in ranges:
+      if s > end + 1:
+        return tuning_frequency((end+1, y))
+      end = max(end, e)
 
 # Solution
 print(process_part_1(parse(INPUT_FILE), 2000000))
