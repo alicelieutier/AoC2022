@@ -1,8 +1,10 @@
 #! /usr/bin/env python3
 import os
-from itertools import pairwise
+from itertools import pairwise, count
 from collections import namedtuple
 from enum import Enum
+from PIL import Image
+
 
 TEST_FILE = f'{os.path.dirname(__file__)}/test_input'
 INPUT_FILE = f'{os.path.dirname(__file__)}/input'
@@ -16,14 +18,12 @@ class TerrainMap:
   def __init__(self, source=SOURCE):
     self.source = source
     self.map = {source: Terrain.SOURCE}
-    self.xmin, self.xmax = 499,501
-    self.ymin, self.ymax = 0,1
+    self.ymax = 1
     self.floor_depth = None
 
   def add_terrain(self, pos, terrain):
     self.map[pos] = terrain
-    self.xmin, self.xmax = min(self.xmin, pos.x), max(self.xmax, pos.x)
-    self.ymin, self.ymax = min(self.ymin, pos.y), max(self.ymax, pos.y)
+    self.ymax = max(self.ymax, pos.y)
   
   def add_rock_lines(self, input_line):
     def coord(point: str) -> Point:
@@ -38,6 +38,7 @@ class TerrainMap:
       for x in range(a.x, b.x + 1):
         for y in range(a.y, b.y + 1):
           self.add_terrain(Point(x,y), Terrain.ROCK)
+          self.ymax = max(self.ymax, y)
 
   def add_floor(self, floor_depth):
     self.floor_depth = floor_depth
@@ -54,14 +55,21 @@ class TerrainMap:
       Terrain.ROCK: '#',
       Terrain.AIR: '.',
     }[self.get(pos)]
+  
+  def get_color(self, pos):
+    return {
+      Terrain.SOURCE: (233, 0, 86),
+      Terrain.SAND: (255, 218, 27),
+      Terrain.ROCK: (11, 9, 40),
+      Terrain.AIR: (120, 190, 230),
+    }[self.get(pos)]
 
   def __repr__(self):
-    print(self.xmin, self.xmax)
     ymax = self.ymax if self.floor_depth is None else self.floor_depth
     output = []
     for y in range(-1, ymax+1):
       line = []
-      for x in range(self.xmin-3, self.xmax+4):
+      for x in range(500 - ymax, 500 + ymax+1):
         line.append(self.get_symbol(Point(x,y)))
       output.append(f"{y: <3} {''.join(line)}")
     return '\n'.join(output)
@@ -114,6 +122,8 @@ def process_part_1(terrain_map):
   counter = 0
   for _ in terrain_map.add_sand():
     counter += 1
+  # print(terrain_map)
+  # create_image(terrain_map, 'part2')
   return counter
 
 def process_part_2(terrain_map):
@@ -121,7 +131,19 @@ def process_part_2(terrain_map):
   terrain_map.add_floor(terrain_map.ymax + 2)
   for _ in terrain_map.add_sand():
     counter += 1
+  # print(terrain_map)
+  # create_image(terrain_map, 'part2')
   return counter
+
+IMAGE_COUNTER = count()
+def create_image(terrain_map, name):
+  height,width = terrain_map.ymax + 3, 2*terrain_map.ymax + 3
+  img = Image.new('RGB', [width,height], 255)
+  data = img.load()
+  for x,i in zip(range(img.size[0]), count(499 - terrain_map.ymax)):
+    for y,j in zip(range(img.size[1]), count(-1)):
+      data[x,y] = terrain_map.get_color(Point(i,j))
+  img.save(f'{name}_{next(IMAGE_COUNTER):05}.png')
 
 # Solution
 print(process_part_1(parse(INPUT_FILE)))
