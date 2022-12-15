@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 import os
 import re
-from itertools import islice
+from itertools import islice, pairwise
 from functools import reduce
 
 TEST_FILE = f'{os.path.dirname(__file__)}/test_input'
@@ -9,7 +9,7 @@ INPUT_FILE = f'{os.path.dirname(__file__)}/input'
 
 def parse(file):
   def parse_line(line):
-    sx,sy,bx,by = (int(number) for number in re.findall(r'\d+', line))
+    sx,sy,bx,by = (int(number) for number in re.findall(r'[-\d]+', line))
     return (sx,sy),(bx,by)
 
   with open(file) as input:
@@ -18,14 +18,14 @@ def parse(file):
 def manhattan(a,b):
   return abs(a[0]-b[0]) + abs(a[1]-b[1])
 
-def does_intersect(disc, target_y):
-  centre, radius = disc
+def does_intersect(disk, target_y):
+  centre, radius = disk
   return abs(centre[1] - target_y) <= radius
 
-def intersection_range(disc, target_y):
+def intersection_range(disk, target_y):
   """return the min and max x for which
-  the y line intersects with the disc"""
-  centre, radius = disc
+  the y line intersects with the disk"""
+  centre, radius = disk
   distance = radius - abs(centre[1] - target_y)
   return centre[0] - distance, centre[0] + distance
 
@@ -35,10 +35,32 @@ def tuning_frequency(pos):
 def range_length(range):
   return range[1] - range[0] + 1
 
+def is_in_a_disk(disks, point):
+  for centre, radius in disks:
+    if manhattan(centre, point) <= radius:
+      return True
+  return False
+
+def print_area(data, max_coord):
+  disks = [(s, manhattan(s,b)) for s,b in data]
+  sensors = {s for s,_ in data}
+  beacons = {b for _,b in data}
+  print(beacons)
+  for y in range(max_coord+1):
+    line = []
+    for x in range(max_coord+1):
+      char = '#' if is_in_a_disk(disks, (x,y)) else '.'
+      if (x,y) in beacons:
+        char = 'B'
+      if (x,y) in sensors:
+        char = 'S'
+      line.append(char)
+    print(f'{y: <2}', ''.join(line))
+
 def process_part_1(data, target_y):
-  discs = [(s, manhattan(s,b)) for s,b in data]
-  ranges = sorted(intersection_range(disc, target_y)
-    for disc in discs if does_intersect(disc, target_y))
+  disks = [(s, manhattan(s,b)) for s,b in data]
+  ranges = sorted(intersection_range(disk, target_y)
+    for disk in disks if does_intersect(disk, target_y))
   if len(ranges) == 0:
     return 0
 
@@ -56,11 +78,18 @@ def process_part_1(data, target_y):
   return length - len(beacons_on_line)
 
 def process_part_2(data, max_coord):
-  pass
+  disks = [(s, manhattan(s,b)) for s,b in data]
+  for y in range(max_coord+1):
+    ranges = sorted(intersection_range(disk, y)
+      for disk in disks if does_intersect(disk, y))
+    for (_,e1),(s2,_) in pairwise(ranges):
+      if e1 + 1 < s2:
+        if not is_in_a_disk(disks, (e1+1, y)):
+          return tuning_frequency((e1+1, y))
 
 # Solution
 print(process_part_1(parse(INPUT_FILE), 2000000))
-# print(process_part_2(parse(INPUT_FILE), 4000000))
+print(process_part_2(parse(INPUT_FILE), 4000000))
 
 # Tests
 assert intersection_range(((8,7), 9),10) == (2,14)
@@ -68,4 +97,4 @@ assert manhattan((0,0), (1,1)) == 2
 assert manhattan((3,7), (-2,9)) == 7
 
 assert process_part_1(parse(TEST_FILE), 10) == 26
-# assert process_part_2(parse(TEST_FILE), 20) == 56000011
+assert process_part_2(parse(TEST_FILE), 20) == 56000011
