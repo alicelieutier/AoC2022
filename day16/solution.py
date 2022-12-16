@@ -1,8 +1,9 @@
 #! /usr/bin/env python3
+import math
 import os
 import re
-from collections import namedtuple
-from itertools import count
+from collections import defaultdict, deque, namedtuple
+from itertools import count, permutations
 
 TEST_FILE = f'{os.path.dirname(__file__)}/test_input'
 INPUT_FILE = f'{os.path.dirname(__file__)}/input'
@@ -19,20 +20,34 @@ def parse(file):
   with open(file) as input:
     return dict([parse_line(line.strip()) for line in input.readlines()])
 
-def traverse(graph, valves_to_open, start, total_time):
+def shortest_path(graph, start, end):
+  pathlengths = defaultdict(lambda: math.inf)
+  visited = set()
+  to_visit = deque()
+  current = start
+  pathlengths[start] = 0
+  while current != end:
+    if current not in visited:
+      for neighbour in graph[current].to:
+        pathlengths[neighbour] = min(pathlengths[neighbour], pathlengths[current]+1)
+        to_visit.append(neighbour)
+      visited.add(current)
+    current = to_visit.popleft()
+  return pathlengths[current]
+
+def traverse(graph, edges, valves_to_open, start, total_time):
   best_found = 0
 
   def aux(valves_to_open, current, time_left=30, total_pressure=0, current_pressure=0):
-    nonlocal best_found
+    nonlocal best_found, edges
+
+    if time_left <= 0:
+      return total_pressure + time_left*current_pressure
 
     pressure_if_we_stay = total_pressure + (time_left * current_pressure)
 
     if pressure_if_we_stay > best_found:
       best_found = pressure_if_we_stay
-      print(best_found)
-    
-    if time_left == 0:
-      return total_pressure
 
     if len(valves_to_open) == 0:
       return pressure_if_we_stay
@@ -44,21 +59,27 @@ def traverse(graph, valves_to_open, start, total_time):
     if max_potential_pressure < best_found:
       return 0
 
-    node = graph[current]
-
     possibles = []
     # If current valve is closed, we can open it
     if current in valves_to_open:
-      possibles.append(aux(valves_to_open - {current}, current, time_left - 1, total_pressure + current_pressure, current_pressure + node.value))
-    # Otherwise, visit other nodes
-    for neighbour in node.to:
-      possibles.append(aux(valves_to_open, neighbour, time_left - 1, total_pressure + current_pressure, current_pressure))
+      possibles.append(aux(valves_to_open - {current}, current, time_left - 1, total_pressure + current_pressure, current_pressure + graph[current].value))
+    # Otherwise, visit other valves
+    for valve in valves_to_open - {current}:
+      time_to_reach_valve = edges[current, valve]
+      possibles.append(aux(
+        valves_to_open,
+        valve,
+        time_left - time_to_reach_valve,
+        total_pressure + time_to_reach_valve*current_pressure,
+        current_pressure))
     return max(possibles)
   return aux(valves_to_open, start, total_time)
 
 def process_part_1(graph):
   valves_to_open = {valve for valve,node in graph.items() if node.value > 0}
-  return traverse(graph, valves_to_open, 'AA', 30)
+  # preprocess shortest paths between each pair of "important" valve
+  edges = {pair: shortest_path(graph, *pair) for pair in permutations(valves_to_open | {'AA'}, 2)}
+  return traverse(graph, edges, valves_to_open, 'AA', 30)
 
 # Solution
 print(process_part_1(parse(INPUT_FILE))) # 1880
